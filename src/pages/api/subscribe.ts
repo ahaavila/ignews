@@ -1,24 +1,65 @@
 import { NextApiRequest, NextApiResponse } from "next";
+import { query as q } from "faunadb";
 import { getSession } from 'next-auth/client';
+import { fauna } from "../../services/fauna";
 import { stripe } from '../../services/stripe';
+
+type User = {
+  ref: {
+    id: string
+  },
+  data: {
+    stripe_customer_id: string
+  }
+}
 
 export default async (req: NextApiRequest, res: NextApiResponse) => {
   if(req.method === 'POST') {
-    // Create a customer on stripe
+
     const session = await getSession({ req });
-    const stripeCustomer = await stripe.customers.create({
-      email: session.user.email,
-      // metadata
-    })
+
+    // I get from the DB, the user
+    const user = await fauna.query<User>(
+      q.Get(
+        q.Match(
+          q.Index('user_by_email'),
+          q.Casefold(session.user.email)
+        )
+      )
+    )
+
+    let customerId = user.data.stripe_customer_id
+
+    // If customerId doesn't exists in my DB, I create him on stripe
+    if (!customerId) {
+      const stripeCustomer = await stripe.customers.create({
+        email: session.user.email,
+        // metadata
+      })
+
+      // And than, I update that user putting the stripeCustomer.id inside of it.
+      await fauna.query(
+        q.Update(
+          q.Ref(q.Collection('users'), user.ref.id),
+          {
+            data: {
+              stripe_customer_id: stripeCustomer.id,
+            }
+          }
+        )
+      )
+
+      customerId = stripeCustomer.id;
+    }
 
     // Creating a subscribe checkout session on Stripe
     const stripeChechoutSession = await stripe.checkout.sessions.create({
-      customer: stripeCustomer.id,
+      customer: customerId,
       payment_method_types: ['card'],
       billing_address_collection: 'required',
       line_items: [
         {
-          price: process.env.STRIPE_PRICE_KEY,
+          price: 'price_1Igwa2Hv95GgYmfyaqgjMDGF',
           quantity: 1,
         }
       ],
