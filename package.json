@@ -10,7 +10,7 @@
   "dependencies": {
     "@prismicio/client": "^4.0.0",
     "@stripe/stripe-js": "^1.13.2",
-    "@types/next-auth": "^3.13.0",
+    "@types/next-auth": "3.7.1",
     "@typescript-eslint/eslint-plugin": "^4.22.0",
     "axios": "^0.21.1",
     "eslint-config-airbnb": "^18.2.1",
