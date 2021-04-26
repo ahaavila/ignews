@@ -57,6 +57,9 @@ export default function PostPreview({ post }: PostPreviewProps) {
 
 export const getStaticPaths = () => {
   return {
+    // Caso eu deixe o path vazio, quer dizer que eu vou carregar as paginas
+    // da minha aplicação quando alguem acessar elas.
+    // Caso eu queira que o slug delas no path.
     paths: [],
     fallback: 'blocking'
   }
@@ -83,6 +86,7 @@ export const getStaticProps: GetStaticProps = async ({ params }) => {
   return {
     props: {
       post
-    }
+    },
+    revalidate: 60 * 30, // 30 minutes
   }
 }
